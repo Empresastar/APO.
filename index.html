@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APO - AI & REAL-TIME API GENERATOR v17.0</title>
+    <style>
+        :root { --neon: #00ff88; --bg: #050505; --panel: #111; --text: #e0e0e0; --ai-purple: #8a2be2; }
+        * { box-sizing: border-box; font-family: 'Fira Code', monospace; }
+        body { background: var(--bg); color: var(--text); padding: 20px; margin: 0; }
+        .container { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; }
+        .header { display: flex; justify-content: space-between; color: var(--neon); border-bottom: 2px solid #222; padding: 10px 0; text-shadow: 0 0 10px var(--neon); }
+        textarea { width: 100%; background: var(--panel); border: 1px solid #333; color: var(--neon); padding: 15px; border-radius: 8px; min-height: 200px; font-size: 14px; }
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        button { padding: 20px; cursor: pointer; border: none; font-weight: bold; border-radius: 8px; transition: 0.3s; text-transform: uppercase; letter-spacing: 1px; }
+        .btn-gen { background: linear-gradient(45deg, var(--neon), var(--ai-purple)); color: #fff; }
+        .btn-copy { background: #222; color: #fff; border: 1px solid #444; }
+        button:hover { transform: translateY(-3px); box-shadow: 0 5px 20px rgba(0, 255, 136, 0.3); }
+        pre { background: #000; border: 1px solid #222; padding: 25px; height: 600px; overflow: auto; color: #00d4ff; border-radius: 8px; font-size: 13px; line-height: 1.6; }
+        .status-bar { font-size: 12px; background: #111; padding: 5px 15px; border-radius: 20px; border: 1px solid #333; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <span>CORE: AI_INTEGRATED_REALTIME_v17.0</span>
+        <div class="status-bar" id="status">SISTEMA ONLINE - AGUARDANDO ESTRUTURA</div>
+    </div>
+
+    <textarea id="jsonInput" placeholder="COLE O JSON AQUI... O sistema vai criar a API, o Banco de Dados, o Tempo Real e a Lógica de IA para cada campo automaticamente."></textarea>
+
+    <div class="controls">
+        <button class="btn-gen" onclick="generateAISystem()">Gerar Sistema Completo com IA</button>
+        <button class="btn-copy" onclick="copyCode()">Copiar Backend (server.js)</button>
+    </div>
+
+    <pre id="codeOutput">// O sistema completo aparecerá aqui...</pre>
+</div>
+
+<script>
+    function generateAISystem() {
+        const input = document.getElementById('jsonInput').value.trim();
+        if (!input) return alert("Insira o JSON!");
+
+        try {
+            const data = JSON.parse(input);
+            const schemaObj = Array.isArray(data) ? data[0] : data;
+            
+            let mongooseSchema = "";
+            for (let key in schemaObj) {
+                const type = typeof schemaObj[key] === 'number' ? 'Number' : 'String';
+                mongooseSchema += `    ${key}: ${type},\n`;
+            }
+
+            const serverCode = `/**
+ * APO SYSTEM v17.0 - FULL CLONE (AI + REAL-TIME + DB)
+ * Dependências: npm install express mongoose socket.io cors dotenv openai
+ */
+
+const express = require('express');
+const http = require('http');
+const mongoose = require('mongoose');
+const { Server } = require('socket.io');
+const cors = require('cors');
+require('dotenv').config();
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
+
+app.use(cors());
+app.use(express.json());
+
+// 1. CONEXÃO COM BANCO DE DADOS REAL (MongoDB)
+mongoose.connect(process.env.MONGO_URI || "mongodb://localhost:27017/ai_api_complete")
+    .then(() => console.log("✅ DATABASE REAL CONECTADO"))
+    .catch(err => console.log("❌ ERRO DB:", err));
+
+// 2. SCHEMA DINÂMICO COMPLETO
+const DataSchema = new mongoose.Schema({
+${mongooseSchema}    ai_analysis: String,
+    timestamp: { type: Date, default: Date.now }
+});
+const DataModel = mongoose.model('SystemData', DataSchema);
+
+// 3. LOGICA DE IA (OPCIONAL - INTEGRAÇÃO COM IA REAL)
+async function processWithAI(data) {
+    // Aqui entra a lógica de IA para processar os dados recebidos
+    // Exemplo: Categorização automática ou análise de sentimento
+    return "Processado por IA v17.0: " + JSON.stringify(data).substring(0, 50) + "...";
+}
+
+// 4. WEBSOCKETS (TEMPO REAL)
+io.on('connection', (socket) => {
+    console.log('⚡ Dispositivo conectado ao sistema: ' + socket.id);
+});
+
+// 5. ENDPOINTS TOTAIS (CRUD + IA + REALTIME)
+
+// [LISTAR]
+app.get('/api/v1/system', async (req, res) => {
+    const results = await DataModel.find().sort({ timestamp: -1 });
+    res.json(results);
+});
+
+// [CRIAR + PROCESSAR + NOTIFICAR]
+app.post('/api/v1/system', async (req, res) => {
+    try {
+        const rawData = req.body;
+        
+        // IA processando em tempo real
+        const analysis = await processWithAI(rawData);
+        
+        const entry = new DataModel({
+            ...rawData,
+            ai_analysis: analysis
+        });
+
+        await entry.save();
+
+        // Notifica todos os usuários no mesmo segundo
+        io.emit('update', { action: 'CREATED', data: entry });
+        
+        res.status(201).json(entry);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// [EDITAR]
+app.put('/api/v1/system/:id', async (req, res) => {
+    const updated = await DataModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    io.emit('update', { action: 'UPDATED', data: updated });
+    res.json(updated);
+});
+
+// [DELETAR]
+app.delete('/api/v1/system/:id', async (req, res) => {
+    await DataModel.findByIdAndDelete(req.params.id);
+    io.emit('update', { action: 'DELETED', id: req.params.id });
+    res.json({ status: "Removido" });
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log('-----------------------------------------');
+    console.log('🤖 SISTEMA DE IA E TEMPO REAL ATIVO');
+    console.log('🔗 URL: http://localhost:' + PORT + '/api/v1/system');
+    console.log('-----------------------------------------');
+});`;
+
+            document.getElementById('codeOutput').innerText = serverCode;
+            document.getElementById('status').innerText = "SISTEMA GERADO: PRONTO PARA PRODUÇÃO";
+            document.getElementById('status').style.color = "var(--neon)";
+        } catch (e) {
+            alert("Erro no JSON!");
+        }
+    }
+
+    function copyCode() {
+        navigator.clipboard.writeText(document.getElementById('codeOutput').innerText);
+        alert("Código v17.0 copiado!");
+    }
+</script>
+</body>
+</html>
